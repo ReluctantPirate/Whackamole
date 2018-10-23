@@ -28,6 +28,11 @@ byte countdownState = 0;
 Timer waitTimer;
 Timer countdownTimer;
 
+Timer urgeTimer;
+int urgeInterval = 500;
+byte urge;
+bool neighborStates[6] = {false, false, false, false, false};
+
 bool isSourceOfDeath = false;
 
 void setup() {
@@ -76,6 +81,8 @@ void setupLoop() {
   if (gameState == GAME) {
     gameBeginTime = millis();
     waitTimer.set(rand(5000) + 1000);
+
+    urge = rand(75);
   }
 }
 
@@ -105,7 +112,46 @@ void gameLoop() {
 
 void hiddenMoleLoop() {
   //here we wait for the timer to expired
-  if (waitTimer.isExpired()) {
+  //  if (waitTimer.isExpired()) {
+  //    waitIncrement = 3000 - (timeSinceGameBegan / 30);  // a value between 1sec and 3sec, gets shorter as the game goes on
+  //    countdownIncrement = waitIncrement / 3;            // our countdown timer shortens as the game progresses
+  //    countdownTimer.set(countdownIncrement);            // set the countdown timer
+  //    moleState = ABOVE;                                 // we've waited long enough Punxsutawney!
+  //  }
+
+  //here we update our "urge" value. It goes up over time, eventually causing us to go above
+  if (urgeTimer.isExpired()) {
+    urge += 10;
+    urgeTimer.set(urgeInterval);
+  }
+
+  //here we watch for neighbors who are newly popped
+  FOREACH_FACE(f) {
+    if (!isValueReceivedOnFaceExpired(f)) {//a neighbor!
+      byte neighborState = getLastValueReceivedOnFace(f) % 10;
+      if (neighborState == ABOVE) {
+        if (neighborStates[f] == HIDDEN) { //a mismatch!
+          if (urge < 20) {//reset to 0
+            urge = 0;
+          } else if (urge < 50) {
+            urge -= 20;
+          } else if (urge < 70) {
+            urge -= 10;
+          } else {
+            urge -= 5;
+          }
+          neighborStates[f] = ABOVE;
+        }
+      } else {
+        neighborStates[f] = HIDDEN;//make sure you set any hidden neighbors as such
+      }
+    } else {
+      neighborStates[f] = HIDDEN;//empty neighbors too
+    }
+  }
+
+  //have we gotten to the point where we want to pop up?
+  if (urge >= 100) {
     waitIncrement = 3000 - (timeSinceGameBegan / 30);  // a value between 1sec and 3sec, gets shorter as the game goes on
     countdownIncrement = waitIncrement / 3;            // our countdown timer shortens as the game progresses
     countdownTimer.set(countdownIncrement);            // set the countdown timer
@@ -136,8 +182,10 @@ void aboveMoleLoop() {
   if (buttonDown()) {
     timeOfWhack = millis();
     moleState = HIDDEN;
-    waitIncrement = 3000 - (timeSinceGameBegan / 30);   // a value between 1sec and 3sec, gets shorter as the game goes on
-    waitTimer.set(rand(waitIncrement) + waitIncrement); // a value between our wait time and possibly twice as long
+    //    waitIncrement = 3000 - (timeSinceGameBegan / 30);   // a value between 1sec and 3sec, gets shorter as the game goes on
+    //    waitTimer.set(rand(waitIncrement) + waitIncrement); // a value between our wait time and possibly twice as long
+    urge = rand(countdownState * 10);
+    urgeInterval = urgeInterval * .9;
     countdownState = 0;
   }
 }
@@ -170,7 +218,8 @@ void displayGame() {
   //  setColor(GREEN);
   // if we are in hiding, then we should be green
   if (moleState == HIDDEN) {
-    setColor(GREEN);
+    //setColor(GREEN);
+    setColor(dim(GREEN, urge * 2));
   }
   // if we are showing then we should show red for how long we are showing
   else if (moleState == ABOVE) {
@@ -193,7 +242,7 @@ void displayGame() {
 
 void displayDeath() {
   if (isSourceOfDeath) {
-    
+
     // color pattern red > orange > yellow > white > yellow > orange > red
     byte hue = 30 + (30 * sin_d(millis() / 5));
     byte sat = 255;
