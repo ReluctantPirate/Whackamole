@@ -82,7 +82,11 @@ void setupLoop() {
     gameBeginTime = millis();
     waitTimer.set(rand(5000) + 1000);
 
-    urge = rand(75);
+    urge = rand(50);
+    urgeInterval = 500;
+    FOREACH_FACE(f) {
+      neighborStates[f] = false;
+    }
   }
 }
 
@@ -219,7 +223,7 @@ void displayGame() {
   // if we are in hiding, then we should be green
   if (moleState == HIDDEN) {
     //setColor(GREEN);
-    setColor(dim(GREEN, urge * 2));
+    setColor(dim(GREEN, urge * 2));//dimmed for debug purposes
   }
   // if we are showing then we should show red for how long we are showing
   else if (moleState == ABOVE) {
