@@ -222,8 +222,8 @@ void displayGame() {
   //  setColor(GREEN);
   // if we are in hiding, then we should be green
   if (moleState == HIDDEN) {
-    //setColor(GREEN);
-    setColor(dim(GREEN, urge * 2));//dimmed for debug purposes
+    setColor(GREEN);
+    //setColor(dim(GREEN, urge * 2));//dimmed for debug purposes
   }
   // if we are showing then we should show red for how long we are showing
   else if (moleState == ABOVE) {
